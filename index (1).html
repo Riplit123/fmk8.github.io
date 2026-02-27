@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Змейка — все настройки</title>
+    <style>
+        * {
+            --control-btn-bg: #e94560;
+            --snake-head: #9acd32;
+            --snake-body: #6b8e23;
+            --food-color: #f05454;
+            --canvas-bg: #0f3460;
+            --canvas-border: #e94560;
+            --score-color: #ffffff;
+            --container-bg: #16213e;
+            --restart-btn-bg: #0f3460;
+            --restart-btn-border: #e94560;
+            --settings-btn-bg: #0f3460;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .game-container {
+            background: var(--container-bg);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .score {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: var(--score-color);
+            font-weight: bold;
+        }
+
+        #gameCanvas {
+            display: block;
+            margin: 0 auto;
+            background: var(--canvas-bg);
+            border-radius: 10px;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1/1;
+            border: 2px solid var(--canvas-border);
+        }
+
+        /* Кнопка открытия настроек — видна только на компьютерах */
+        .settings-toggle {
+            display: inline-block;
+        }
+
+        .settings-btn {
+            background: var(--settings-btn-bg);
+            color: white;
+            border: 2px solid var(--restart-btn-border);
+            font-size: 24px;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #0a1a2e, 0 5px 15px rgba(0,0,0,0.4);
+            transition: all 0.1s ease;
+            touch-action: manipulation;
+            margin-left: 10px;
+        }
+
+        .settings-btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 2px 0 #0a1a2e, 0 5px 12px rgba(0,0,0,0.4);
+        }
+
+        /* Панель настроек (изначально скрыта) */
+        .settings-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background: #0f3460;
+            border-radius: 15px;
+            border: 1px solid var(--canvas-border);
+            color: white;
+            display: none;
+        }
+
+        .settings-panel.visible {
+            display: block;
+        }
+
+        .settings-panel h3 {
+            margin: 0 0 15px 0;
+            text-align: center;
+            color: var(--canvas-border);
+        }
+
+        .settings-section {
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #30475e;
+        }
+
+        .settings-section h4 {
+            margin: 0 0 10px 0;
+            color: #e94560;
+        }
+
+        .setting-item {
+            margin-bottom: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .setting-item label {
+            width: 160px;
+            font-size: 14px;
+        }
+
+        .setting-item input[type="range"] {
+            flex: 2;
+            min-width: 150px;
+            height: 6px;
+            background: #e94560;
+            border-radius: 5px;
+            -webkit-appearance: none;
+        }
+
+        .setting-item input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #e94560;
+        }
+
+        .setting-item input[type="number"] {
+            width: 70px;
+            padding: 5px;
+            border-radius: 5px;
+            border: none;
+            text-align: center;
+            background: #16213e;
+            color: white;
+            font-weight: bold;
+            border: 1px solid #e94560;
+        }
+
+        .setting-item input[type="color"] {
+            width: 60px;
+            height: 40px;
+            border: 2px solid var(--canvas-border);
+            border-radius: 8px;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .reset-settings-btn {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: 0.1s;
+        }
+
+        .reset-settings-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Кнопки управления игрой */
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .control-row {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 5px 0;
+        }
+
+        .control-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 15px;
+            border: none;
+            background: var(--control-btn-bg);
+            color: white;
+            font-size: 30px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #b32e4b, 0 8px 15px rgba(0,0,0,0.3);
+            transition: all 0.05s ease;
+            touch-action: manipulation;
+        }
+
+        .control-btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 3px 0 #b32e4b, 0 5px 12px rgba(0,0,0,0.3);
+        }
+
+        .restart-btn {
+            background: var(--restart-btn-bg);
+            color: white;
+            border: 2px solid var(--restart-btn-border);
+            font-size: 20px;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #0a1a2e, 0 5px 15px rgba(0,0,0,0.4);
+            transition: all 0.1s ease;
+            touch-action: manipulation;
+        }
+
+        .restart-btn:active {
+            transform: translateY(5px);
+            box-shadow: 0 2px 0 #0a1a2e, 0 5px 12px rgba(0,0,0,0.4);
+        }
+
+        /* На мобильных устройствах кнопка настроек и панель скрыты */
+        @media (max-width: 768px) {
+            .settings-btn,
+            .settings-panel {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="score">Счёт: <span id="score">0</span></div>
+        <canvas id="gameCanvas" width="300" height="300"></canvas>
+
+        <!-- Панель настроек (скрыта, пока не нажата кнопка) -->
+        <div class="settings-panel" id="settingsPanel">
+            <h3>⚙️ Редактор параметров</h3>
+
+            <!-- Игровые параметры (ползунки) -->
+            <div class="settings-section">
+                <h4>Игровые параметры</h4>
+                <div class="setting-item">
+                    <label>Скорость (мс): <span id="speedValue">200</span></label>
+                    <input type="range" id="speedRange" min="50" max="500" step="10" value="200">
+                    <input type="number" id="speedInput" min="50" max="500" step="10" value="200">
+                </div>
+                <div class="setting-item">
+                    <label>Размер сетки: <span id="gridSizeValue">15</span></label>
+                    <input type="range" id="gridSizeRange" min="10" max="30" step="1" value="15">
+                    <input type="number" id="gridSizeInput" min="10" max="30" step="1" value="15">
+                </div>
+                <div class="setting-item">
+                    <label>Длина змейки: <span id="snakeLengthValue">3</span></label>
+                    <input type="range" id="snakeLengthRange" min="2" max="15" step="1" value="3">
+                    <input type="number" id="snakeLengthInput" min="2" max="15" step="1" value="3">
+                </div>
+            </div>
+
+            <!-- Цветовые настройки -->
+            <div class="settings-section">
+                <h4>Цвета интерфейса</h4>
+                <div class="setting-item">
+                    <label>Кнопки управления</label>
+                    <input type="color" id="controlBtnColor" value="#e94560">
+                </div>
+                <div class="setting-item">
+                    <label>Голова змейки</label>
+                    <input type="color" id="snakeHeadColor" value="#9acd32">
+                </div>
+                <div class="setting-item">
+                    <label>Тело змейки</label>
+                    <input type="color" id="snakeBodyColor" value="#6b8e23">
+                </div>
+                <div class="setting-item">
+                    <label>Еда</label>
+                    <input type="color" id="foodColor" value="#f05454">
+                </div>
+                <div class="setting-item">
+                    <label>Фон поля</label>
+                    <input type="color" id="canvasBgColor" value="#0f3460">
+                </div>
+                <div class="setting-item">
+                    <label>Рамка поля</label>
+                    <input type="color" id="canvasBorderColor" value="#e94560">
+                </div>
+                <div class="setting-item">
+                    <label>Цвет счёта</label>
+                    <input type="color" id="scoreColor" value="#ffffff">
+                </div>
+                <div class="setting-item">
+                    <label>Фон контейнера</label>
+                    <input type="color" id="containerBgColor" value="#16213e">
+                </div>
+                <div class="setting-item">
+                    <label>Кнопка "Новая игра"</label>
+                    <input type="color" id="restartBtnColor" value="#0f3460">
+                </div>
+                <div class="setting-item">
+                    <label>Кнопка настроек</label>
+                    <input type="color" id="settingsBtnColor" value="#0f3460">
+                </div>
+            </div>
+
+            <button class="reset-settings-btn" id="resetSettingsBtn">Сбросить все настройки</button>
+        </div>
+
+        <!-- Кнопки управления -->
+        <div class="controls">
+            <div class="control-row">
+                <button class="control-btn up" id="btnUp">▲</button>
+            </div>
+            <div class="control-row">
+                <button class="control-btn left" id="btnLeft">◀</button>
+                <button class="control-btn down" id="btnDown">▼</button>
+                <button class="control-btn right" id="btnRight">▶</button>
+            </div>
+            <div class="control-row">
+                <button class="restart-btn" id="btnRestart">Новая игра</button>
+                <button class="settings-btn" id="btnSettings">⚙️</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ---------- Элементы интерфейса ----------
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const scoreSpan = document.getElementById('score');
+            const settingsPanel = document.getElementById('settingsPanel');
+            const btnSettings = document.getElementById('btnSettings');
+            const resetSettingsBtn = document.getElementById('resetSettingsBtn');
+
+            // ---------- Цветовые настройки ----------
+            const colorSettings = [
+                { id: 'controlBtnColor', varName: '--control-btn-bg' },
+                { id: 'snakeHeadColor', varName: '--snake-head' },
+                { id: 'snakeBodyColor', varName: '--snake-body' },
+                { id: 'foodColor', varName: '--food-color' },
+                { id: 'canvasBgColor', varName: '--canvas-bg' },
+                { id: 'canvasBorderColor', varName: '--canvas-border' },
+                { id: 'scoreColor', varName: '--score-color' },
+                { id: 'containerBgColor', varName: '--container-bg' },
+                { id: 'restartBtnColor', varName: '--restart-btn-bg' },
+                { id: 'settingsBtnColor', varName: '--settings-btn-bg' }
+            ];
+
+            const defaultColors = {
+                controlBtnColor: '#e94560',
+                snakeHeadColor: '#9acd32',
+                snakeBodyColor: '#6b8e23',
+                foodColor: '#f05454',
+                canvasBgColor: '#0f3460',
+                canvasBorderColor: '#e94560',
+                scoreColor: '#ffffff',
+                containerBgColor: '#16213e',
+                restartBtnColor: '#0f3460',
+                settingsBtnColor: '#0f3460'
+            };
+
+            // ---------- Игровые параметры ----------
+            let gridSize = 15;
+            let gameSpeed = 200;
+            let initialSnakeLength = 3;
+
+            const speedRange = document.getElementById('speedRange');
+            const speedInput = document.getElementById('speedInput');
+            const speedSpan = document.getElementById('speedValue');
+
+            const gridSizeRange = document.getElementById('gridSizeRange');
+            const gridSizeInput = document.getElementById('gridSizeInput');
+            const gridSizeSpan = document.getElementById('gridSizeValue');
+
+            const snakeLengthRange = document.getElementById('snakeLengthRange');
+            const snakeLengthInput = document.getElementById('snakeLengthInput');
+            const snakeLengthSpan = document.getElementById('snakeLengthValue');
+
+            // ---------- Переменные игры ----------
+            let snake = [];
+            let direction = { dx: 1, dy: 0 };
+            let food = { x: 10, y: 10 };
+            let score = 0;
+            let gameOver = false;
+            let gameWin = false;
+            let gameInterval = null;
+
+            // ---------- Загрузка сохранённых настроек ----------
+            function loadSettings() {
+                // Цвета
+                colorSettings.forEach(setting => {
+                    const saved = localStorage.getItem(setting.varName);
+                    if (saved) {
+                        document.documentElement.style.setProperty(setting.varName, saved);
+                        const input = document.getElementById(setting.id);
+                        if (input) input.value = saved;
+                    }
+                });
+
+                // Игровые параметры
+                const savedSpeed = localStorage.getItem('snakeSpeed');
+                const savedGridSize = localStorage.getItem('snakeGridSize');
+                const savedLength = localStorage.getItem('snakeLength');
+
+                if (savedSpeed !== null) gameSpeed = parseInt(savedSpeed);
+                if (savedGridSize !== null) gridSize = parseInt(savedGridSize);
+                if (savedLength !== null) initialSnakeLength = parseInt(savedLength);
+
+                // Обновить ползунки и поля
+                updateGameSettingsUI();
+            }
+
+            function updateGameSettingsUI() {
+                speedRange.value = gameSpeed;
+                speedInput.value = gameSpeed;
+                speedSpan.textContent = gameSpeed;
+
+                gridSizeRange.value = gridSize;
+                gridSizeInput.value = gridSize;
+                gridSizeSpan.textContent = gridSize;
+
+                // Максимальная длина не больше размера сетки
+                snakeLengthRange.max = gridSize;
+                snakeLengthInput.max = gridSize;
+                if (initialSnakeLength > gridSize) initialSnakeLength = gridSize;
+                snakeLengthRange.value = initialSnakeLength;
+                snakeLengthInput.value = initialSnakeLength;
+                snakeLengthSpan.textContent = initialSnakeLength;
+            }
+
+            function saveGameSettings() {
+                localStorage.setItem('snakeSpeed', gameSpeed);
+                localStorage.setItem('snakeGridSize', gridSize);
+                localStorage.setItem('snakeLength', initialSnakeLength);
+            }
+
+            function saveColor(varName, value) {
+                localStorage.setItem(varName, value);
+            }
+
+            // Сброс всех настроек на значения по умолчанию
+            function resetAllSettings() {
+                // Сброс цветов
+                for (let key in defaultColors) {
+                    const input = document.getElementById(key);
+                    if (input) {
+                        input.value = defaultColors[key];
+                        const setting = colorSettings.find(s => s.id === key);
+                        if (setting) {
+                            document.documentElement.style.setProperty(setting.varName, defaultColors[key]);
+                            saveColor(setting.varName, defaultColors[key]);
+                        }
+                    }
+                }
+
+                // Сброс игровых параметров
+                gameSpeed = 200;
+                gridSize = 15;
+                initialSnakeLength = 3;
+
+                updateGameSettingsUI();
+                saveGameSettings();
+
+                // Перезапустить игру с новыми параметрами
+                if (gameInterval) clearInterval(gameInterval);
+                resetGame();
+                gameInterval = setInterval(step, gameSpeed);
+            }
+
+            // ---------- Обработчики цветов ----------
+            function setupColorListeners() {
+                colorSettings.forEach(setting => {
+                    const input = document.getElementById(setting.id);
+                    if (!input) return;
+
+                    input.addEventListener('input', function(e) {
+                        const newColor = e.target.value;
+                        document.documentElement.style.setProperty(setting.varName, newColor);
+                        saveColor(setting.varName, newColor);
+                        if (setting.id.includes('snake') || setting.id.includes('food') || setting.id.includes('canvas')) {
+                            draw(); // перерисовать canvas
+                        }
+                    });
+                });
+            }
+
+            // ---------- Обработчики игровых параметров ----------
+            function setupGameParamListeners() {
+                // Скорость
+                function speedChangeHandler() {
+                    const val = parseInt(this.value);
+                    gameSpeed = val;
+                    speedRange.value = val;
+                    speedInput.value = val;
+                    speedSpan.textContent = val;
+                    saveGameSettings();
+                    if (gameInterval) clearInterval(gameInterval);
+                    gameInterval = setInterval(step, gameSpeed);
+                }
+                speedRange.addEventListener('input', speedChangeHandler);
+                speedInput.addEventListener('input', speedChangeHandler);
+
+                // Размер сетки
+                function gridSizeChangeHandler() {
+                    const newSize = parseInt(this.value);
+                    if (newSize < 10 || newSize > 30) return;
+
+                    gridSize = newSize;
+                    gridSizeRange.value = newSize;
+                    gridSizeInput.value = newSize;
+                    gridSizeSpan.textContent = newSize;
+
+                    // Корректируем максимальную длину змейки
+                    snakeLengthRange.max = gridSize;
+                    snakeLengthInput.max = gridSize;
+                    if (initialSnakeLength > gridSize) {
+                        initialSnakeLength = gridSize;
+                        snakeLengthRange.value = gridSize;
+                        snakeLengthInput.value = gridSize;
+                        snakeLengthSpan.textContent = gridSize;
+                    }
+
+                    saveGameSettings();
+                    resetGame(); // перезапуск с новым размером
+                }
+                gridSizeRange.addEventListener('input', gridSizeChangeHandler);
+                gridSizeInput.addEventListener('input', gridSizeChangeHandler);
+
+                // Длина змейки
+                function snakeLengthChangeHandler() {
+                    let newLength = parseInt(this.value);
+                    if (newLength < 2) newLength = 2;
+                    if (newLength > gridSize) newLength = gridSize;
+
+                    initialSnakeLength = newLength;
+                    snakeLengthRange.value = newLength;
+                    snakeLengthInput.value = newLength;
+                    snakeLengthSpan.textContent = newLength;
+
+                    saveGameSettings();
+                    resetGame();
+                }
+                snakeLengthRange.addEventListener('input', snakeLengthChangeHandler);
+                snakeLengthInput.addEventListener('input', snakeLengthChangeHandler);
+            }
+
+            // ---------- Логика игры ----------
+            function createSnake(length, size) {
+                const newSnake = [];
+                const centerY = Math.floor(size / 2);
+                for (let i = 0; i < length; i++) {
+                    newSnake.push({ x: length - 1 - i, y: centerY });
+                }
+                return newSnake;
+            }
+
+            function generateFood() {
+                const maxAttempts = 1000;
+                for (let attempt = 0; attempt < maxAttempts; attempt++) {
+                    const x = Math.floor(Math.random() * gridSize);
+                    const y = Math.floor(Math.random() * gridSize);
+                    if (!snake.some(segment => segment.x === x && segment.y === y)) {
+                        food = { x, y };
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            function resetGame() {
+                snake = createSnake(initialSnakeLength, gridSize);
+                direction = { dx: 1, dy: 0 };
+                score = 0;
+                gameOver = false;
+                gameWin = false;
+                scoreSpan.textContent = score;
+                if (!generateFood()) {
+                    gameWin = true;
+                }
+                draw();
+            }
+
+            function checkCollision(head) {
+                if (head.x < 0 || head.x >= gridSize || head.y < 0 || head.y >= gridSize) return true;
+                return snake.some(segment => segment.x === head.x && segment.y === head.y);
+            }
+
+            function step() {
+                if (gameOver || gameWin) return;
+
+                const head = snake[0];
+                const newHead = {
+                    x: head.x + direction.dx,
+                    y: head.y + direction.dy
+                };
+
+                const isEating = (newHead.x === food.x && newHead.y === food.y);
+
+                if (checkCollision(newHead)) {
+                    gameOver = true;
+                    draw();
+                    return;
+                }
+
+                snake.unshift(newHead);
+
+                if (isEating) {
+                    score++;
+                    scoreSpan.textContent = score;
+                    if (!generateFood()) {
+                        gameWin = true;
+                        draw();
+                        return;
+                    }
+                } else {
+                    snake.pop();
+                }
+
+                draw();
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                const cellSize = canvas.width / gridSize;
+
+                // Сетка
+                ctx.strokeStyle = '#30475e';
+                ctx.lineWidth = 0.5;
+                for (let i = 0; i <= gridSize; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(i * cellSize, 0);
+                    ctx.lineTo(i * cellSize, canvas.height);
+                    ctx.stroke();
+                    ctx.moveTo(0, i * cellSize);
+                    ctx.lineTo(canvas.width, i * cellSize);
+                    ctx.stroke();
+                }
+
+                // Еда
+                const foodColor = getComputedStyle(document.documentElement).getPropertyValue('--food-color').trim();
+                ctx.fillStyle = foodColor;
+                ctx.shadowColor = foodColor;
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.arc(food.x * cellSize + cellSize/2, food.y * cellSize + cellSize/2, cellSize/2 - 2, 0, Math.PI*2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                // Змейка
+                const headColor = getComputedStyle(document.documentElement).getPropertyValue('--snake-head').trim();
+                const bodyColor = getComputedStyle(document.documentElement).getPropertyValue('--snake-body').trim();
+                snake.forEach((segment, index) => {
+                    const isHead = index === 0;
+                    ctx.fillStyle = isHead ? headColor : bodyColor;
+                    ctx.shadowColor = bodyColor;
+                    ctx.shadowBlur = 8;
+                    const padding = isHead ? 2 : 3;
+                    const size = cellSize - padding * 2;
+                    ctx.fillRect(segment.x * cellSize + padding, segment.y * cellSize + padding, size, size);
+                });
+                ctx.shadowBlur = 0;
+
+                // Сообщения
+                if (gameOver) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = '#fff';
+                    ctx.font = 'bold 24px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('Игра окончена', canvas.width/2, canvas.height/2 - 20);
+                    ctx.font = '18px Arial';
+                    ctx.fillText('Нажмите "Новая игра"', canvas.width/2, canvas.height/2 + 20);
+                } else if (gameWin) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.fillStyle = '#ffd700';
+                    ctx.font = 'bold 24px Arial';
+                    ctx.fillText('Вы выиграли!', canvas.width/2, canvas.height/2 - 20);
+                    ctx.font = '18px Arial';
+                    ctx.fillStyle = '#fff';
+                    ctx.fillText('Нажмите "Новая игра"', canvas.width/2, canvas.height/2 + 20);
+                }
+            }
+
+            function setDirection(dx, dy) {
+                if (gameOver || gameWin) return;
+                if ((direction.dx !== -dx || direction.dy !== -dy) && !(dx === 0 && dy === 0)) {
+                    direction = { dx, dy };
+                }
+            }
+
+            // ---------- Управление панелью ----------
+            btnSettings.addEventListener('click', () => {
+                settingsPanel.classList.toggle('visible');
+            });
+
+            resetSettingsBtn.addEventListener('click', resetAllSettings);
+
+            // ---------- Обработчики кнопок ----------
+            document.getElementById('btnUp').addEventListener('click', () => setDirection(0, -1));
+            document.getElementById('btnDown').addEventListener('click', () => setDirection(0, 1));
+            document.getElementById('btnLeft').addEventListener('click', () => setDirection(-1, 0));
+            document.getElementById('btnRight').addEventListener('click', () => setDirection(1, 0));
+            document.getElementById('btnRestart').addEventListener('click', resetGame);
+
+            // touch-события
+            ['btnUp', 'btnDown', 'btnLeft', 'btnRight', 'btnRestart', 'btnSettings'].forEach(id => {
+                const btn = document.getElementById(id);
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    btn.click();
+                });
+            });
+
+            // Клавиатура
+            window.addEventListener('keydown', (e) => {
+                switch(e.key) {
+                    case 'ArrowUp': e.preventDefault(); setDirection(0, -1); break;
+                    case 'ArrowDown': e.preventDefault(); setDirection(0, 1); break;
+                    case 'ArrowLeft': e.preventDefault(); setDirection(-1, 0); break;
+                    case 'ArrowRight': e.preventDefault(); setDirection(1, 0); break;
+                    case ' ': resetGame(); e.preventDefault(); break;
+                }
+            });
+
+            // ---------- Инициализация ----------
+            loadSettings();
+            updateGameSettingsUI(); // синхронизация UI после загрузки
+            setupColorListeners();
+            setupGameParamListeners();
+            resetGame();
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(step, gameSpeed);
+        })();
+    </script>
+</body>
+</html>
